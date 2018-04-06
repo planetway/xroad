@@ -45,6 +45,10 @@ func (m *Mux) serveSoap2(w http.ResponseWriter, e SOAPEnvelope) error {
 	if h, ok := m.handlers[e.Header.Service.ServiceCode]; ok {
 		return WrapError(h(w, e))
 	}
+	// fallback to "*"
+	if h, ok := m.handlers["*"]; ok {
+		return WrapError(h(w, e))
+	}
 	return SOAPFault{
 		Code:   "soap:Server",
 		String: "Service not found",
