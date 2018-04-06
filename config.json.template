@@ -1,0 +1,23 @@
+{
+  "header": {
+    "protocolVersion": "4.0",
+    "id": "ID",
+    "userId": "userID",
+    "service": {
+      "xRoadInstance": "FI",
+      "memberClass": "GOV",
+      "memberCode": "TEST",
+      "subsystemCode": "FILESERVICE",
+      "serviceCode": "get",
+      "serviceVersion": "v1",
+      "objectType": "SERVICE"
+    },
+    "client": {
+      "xRoadInstance": "FI",
+      "memberClass": "GOV",
+      "memberCode": "CLIENT",
+      "subsystemCode": "SUB",
+      "objectType": "SUBSYSTEM"
+    }
+  }
+}
