@@ -37,6 +37,7 @@ type SOAPHeader struct {
 	ProtocolVersion string       `xml:"http://x-road.eu/xsd/xroad.xsd protocolVersion" json:"protocolVersion"`
 	Id              string       `xml:"http://x-road.eu/xsd/xroad.xsd id" json:"id"`
 	UserId          string       `xml:"http://x-road.eu/xsd/xroad.xsd userId" json:"userId"`
+	TargetUserId    *string      `xml:"http://x-road.eu/xsd/xroad.xsd targetUserId" json:"targetUserId"`
 	Issue           string       `xml:"http://x-road.eu/xsd/xroad.xsd issue" json:"issue"`
 	Service         XroadService `xml:"service" json:"service" mapstructure:"service"`
 	Client          XroadClient  `xml:"client" json:"client" mapstructure:"client"`
