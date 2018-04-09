@@ -55,6 +55,15 @@ type XroadService struct {
 	ServiceVersion string   `xml:"http://x-road.eu/xsd/identifiers serviceVersion" json:"serviceVersion"`
 }
 
+func (x XroadService) Equal(y XroadService) bool {
+	if x.XroadClient.Equal(y.XroadClient) &&
+		x.ServiceCode == y.ServiceCode &&
+		x.ServiceVersion == y.ServiceVersion {
+		return true
+	}
+	return false
+}
+
 func (x XroadService) String() string {
 	return fmt.Sprintf("%s, serviceCode: %s, serviceVersion: %s", x.XroadClient.String(), x.ServiceCode, x.ServiceVersion)
 }
@@ -66,6 +75,17 @@ type XroadClient struct {
 	MemberClass   string   `xml:"http://x-road.eu/xsd/identifiers memberClass" json:"memberClass"`
 	MemberCode    string   `xml:"http://x-road.eu/xsd/identifiers memberCode" json:"memberCode"`
 	SubsystemCode string   `xml:"http://x-road.eu/xsd/identifiers subsystemCode" json:"subsystemCode"`
+}
+
+func (x XroadClient) Equal(y XroadClient) bool {
+	if x.ObjectType == y.ObjectType &&
+		x.XRoadInstance == y.XRoadInstance &&
+		x.MemberClass == y.MemberClass &&
+		x.MemberCode == y.MemberCode &&
+		x.SubsystemCode == y.SubsystemCode {
+		return true
+	}
+	return false
 }
 
 func (x XroadClient) String() string {
