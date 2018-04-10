@@ -101,7 +101,7 @@ func RecoverSOAP(next SOAPHandler) SOAPHandler {
 			}
 			if err != nil {
 				stack := debug.Stack()
-				Log.Log("error", err, "stack", stack)
+				Log.Log("error", err, "stack", string(stack))
 			}
 		}()
 		return next.ServeSOAP(w, r, e)
