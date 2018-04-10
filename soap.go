@@ -11,7 +11,15 @@ import (
 	"strings"
 )
 
-type SOAPHandler func(http.ResponseWriter, *http.Request, SOAPEnvelope) error
+type SOAPHandlerFunc func(http.ResponseWriter, *http.Request, SOAPEnvelope) error
+
+func (f SOAPHandlerFunc) ServeSOAP(w http.ResponseWriter, r *http.Request, e SOAPEnvelope) error {
+	return f(w, r, e)
+}
+
+type SOAPHandler interface {
+	ServeSOAP(http.ResponseWriter, *http.Request, SOAPEnvelope) error
+}
 
 type Mux struct {
 	handlers    map[string]SOAPHandler
@@ -45,11 +53,11 @@ func (m *Mux) Handle(pattern string, h SOAPHandler) {
 
 func (m *Mux) serveSoap2(w http.ResponseWriter, r *http.Request, e SOAPEnvelope) error {
 	if h, ok := m.handlers[e.Header.Service.ServiceCode]; ok {
-		return WrapError(h(w, r, e))
+		return WrapError(h.ServeSOAP(w, r, e))
 	}
 	// fallback to "*"
 	if h, ok := m.handlers["*"]; ok {
-		return WrapError(h(w, r, e))
+		return WrapError(h.ServeSOAP(w, r, e))
 	}
 	return SOAPFault{
 		Code:   "soap:Server",
@@ -58,11 +66,12 @@ func (m *Mux) serveSoap2(w http.ResponseWriter, r *http.Request, e SOAPEnvelope)
 }
 
 func (m *Mux) serveSoap(w http.ResponseWriter, r *http.Request, e SOAPEnvelope) error {
-	next := m.serveSoap2
+	var next SOAPHandler
+	next = SOAPHandlerFunc(m.serveSoap2)
 	for _, middleware := range m.Middlewares {
 		next = middleware(next)
 	}
-	return WrapError(next(w, r, e))
+	return WrapError(next.ServeSOAP(w, r, e))
 }
 
 func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) error {

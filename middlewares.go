@@ -13,8 +13,8 @@ import (
 type SOAPMiddleware func(SOAPHandler) SOAPHandler
 
 func ErrorToSOAPFault(next SOAPHandler) SOAPHandler {
-	return func(w http.ResponseWriter, r *http.Request, e SOAPEnvelope) error {
-		if err := next(w, r, e); err != nil {
+	return SOAPHandlerFunc(func(w http.ResponseWriter, r *http.Request, e SOAPEnvelope) error {
+		if err := next.ServeSOAP(w, r, e); err != nil {
 			if cause, ok := errors.Cause(err).(SOAPFault); ok {
 				res := e.NewResponseEnvelope(SOAPFaultBody{
 					Fault: cause,
@@ -34,7 +34,7 @@ func ErrorToSOAPFault(next SOAPHandler) SOAPHandler {
 			return nil
 		}
 		return nil
-	}
+	})
 }
 
 type verboseWriter struct {
@@ -70,24 +70,24 @@ func (w verboseWriter) Flush() {
 }
 
 func DumpResponse(next SOAPHandler) SOAPHandler {
-	return func(w http.ResponseWriter, r *http.Request, e SOAPEnvelope) error {
+	return SOAPHandlerFunc(func(w http.ResponseWriter, r *http.Request, e SOAPEnvelope) error {
 		fmt.Fprintf(os.Stderr, "\nout:\n")
 		w = NewVerboseResponseWriter(w, os.Stderr)
-		return WrapError(next(w, r, e))
-	}
+		return WrapError(next.ServeSOAP(w, r, e))
+	})
 }
 
 func SOAPHeaderLog(l Logger) func(SOAPHandler) SOAPHandler {
 	return func(next SOAPHandler) SOAPHandler {
-		return func(w http.ResponseWriter, r *http.Request, e SOAPEnvelope) error {
+		return SOAPHandlerFunc(func(w http.ResponseWriter, r *http.Request, e SOAPEnvelope) error {
 			l.Log("id", e.Header.Id, "userId", e.Header.UserId, "client", e.Header.Client.String(), "service", e.Header.Service.String())
-			return WrapError(next(w, r, e))
-		}
+			return WrapError(next.ServeSOAP(w, r, e))
+		})
 	}
 }
 
 func RecoverSOAP(next SOAPHandler) SOAPHandler {
-	return func(w http.ResponseWriter, r *http.Request, e SOAPEnvelope) (err error) {
+	return SOAPHandlerFunc(func(w http.ResponseWriter, r *http.Request, e SOAPEnvelope) (err error) {
 		defer func() {
 			if r := recover(); r != nil {
 				switch x := r.(type) {
@@ -104,6 +104,6 @@ func RecoverSOAP(next SOAPHandler) SOAPHandler {
 				Log.Log("error", err, "stack", stack)
 			}
 		}()
-		return next(w, r, e)
-	}
+		return next.ServeSOAP(w, r, e)
+	})
 }
