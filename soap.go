@@ -51,6 +51,10 @@ func (m *Mux) Handle(pattern string, h SOAPHandler) {
 	m.handlers[pattern] = h
 }
 
+func (m *Mux) HandleFunc(pattern string, h func(http.ResponseWriter, *http.Request, SOAPEnvelope) error) {
+	m.handlers[pattern] = SOAPHandlerFunc(h)
+}
+
 func (m *Mux) serveSoap2(w http.ResponseWriter, r *http.Request, e SOAPEnvelope) error {
 	if h, ok := m.handlers[e.Header.Service.ServiceCode]; ok {
 		return WrapError(h.ServeSOAP(w, r, e))
