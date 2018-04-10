@@ -137,7 +137,7 @@ func (m *Mux) NewBody() interface{} {
 
 func WriteSoap(status int, e SOAPEnvelope, w http.ResponseWriter) error {
 	if e.XOP == nil {
-		w.Header().Set("Content-Type", "text/xml")
+		w.Header().Set("Content-Type", "text/xml; charset=utf-8")
 		w.WriteHeader(status)
 
 		enc := xml.NewEncoder(w)

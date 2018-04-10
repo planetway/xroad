@@ -66,7 +66,7 @@ func (c Client) NewRequest(url string, header SOAPHeader, body interface{}) (*ht
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	req.Header.Set("Content-Type", "text/xml")
+	req.Header.Set("Content-Type", "text/xml; charset=utf-8")
 	req.Header.Set("User-Agent", UserAgent)
 
 	return req, nil
