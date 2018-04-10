@@ -101,26 +101,31 @@ func Decode(r *http.Request, envelope *SOAPEnvelope) error {
 	}
 	body := bytes.NewReader(b)
 
+	if err := DecodeReader(body, contentType, envelope); err != nil {
+		return WrapError(err)
+	}
+	if _, err := body.Seek(0, io.SeekStart); err != nil {
+		return WrapError(err)
+	}
+	r.Body = ioutil.NopCloser(body)
+	return nil
+}
+
+func DecodeReader(r io.Reader, contentType string, envelope *SOAPEnvelope) error {
 	if strings.HasPrefix(contentType, "text/xml") {
 		// parse SOAP
-		dec := xml.NewDecoder(body)
+		dec := xml.NewDecoder(r)
 		if err := dec.Decode(envelope); err != nil {
-			return WrapError(err)
-		}
-		if _, err := body.Seek(0, io.SeekStart); err != nil {
 			return WrapError(err)
 		}
 		return nil
 	} else if strings.HasPrefix(contentType, "multipart/") {
 		// parse multipart
-		xop, err := NewXOPFromReader(contentType, body, envelope)
+		xop, err := NewXOPFromReader(contentType, r, envelope)
 		if err != nil {
 			return WrapError(err)
 		}
 		envelope.XOP = xop
-		if _, err := body.Seek(0, io.SeekStart); err != nil {
-			return WrapError(err)
-		}
 		return nil
 	}
 	return WrapError(errors.New("invalid Content-Type"))
