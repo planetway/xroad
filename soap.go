@@ -1,15 +1,17 @@
 package xroad
 
 import (
+	"bytes"
 	"encoding/xml"
 	"errors"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"reflect"
 	"strings"
 )
 
-type SOAPHandler func(http.ResponseWriter, SOAPEnvelope) error
+type SOAPHandler func(http.ResponseWriter, *http.Request, SOAPEnvelope) error
 
 type Mux struct {
 	handlers    map[string]SOAPHandler
@@ -41,13 +43,13 @@ func (m *Mux) Handle(pattern string, h SOAPHandler) {
 	m.handlers[pattern] = h
 }
 
-func (m *Mux) serveSoap2(w http.ResponseWriter, e SOAPEnvelope) error {
+func (m *Mux) serveSoap2(w http.ResponseWriter, r *http.Request, e SOAPEnvelope) error {
 	if h, ok := m.handlers[e.Header.Service.ServiceCode]; ok {
-		return WrapError(h(w, e))
+		return WrapError(h(w, r, e))
 	}
 	// fallback to "*"
 	if h, ok := m.handlers["*"]; ok {
-		return WrapError(h(w, e))
+		return WrapError(h(w, r, e))
 	}
 	return SOAPFault{
 		Code:   "soap:Server",
@@ -55,12 +57,12 @@ func (m *Mux) serveSoap2(w http.ResponseWriter, e SOAPEnvelope) error {
 	}
 }
 
-func (m *Mux) serveSoap(w http.ResponseWriter, e SOAPEnvelope) error {
+func (m *Mux) serveSoap(w http.ResponseWriter, r *http.Request, e SOAPEnvelope) error {
 	next := m.serveSoap2
 	for _, middleware := range m.Middlewares {
 		next = middleware(next)
 	}
-	return WrapError(next(w, e))
+	return WrapError(next(w, r, e))
 }
 
 func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
@@ -69,30 +71,47 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	contentType := r.Header.Get("Content-Type")
 	var e SOAPEnvelope
 	e.Body = m.NewBody()
-	if err := Decode(contentType, r.Body, &e); err != nil {
+	if err := Decode(r, &e); err != nil {
 		return WrapError(err)
 	}
-	return WrapError(m.serveSoap(w, e))
+	return WrapError(m.serveSoap(w, r, e))
 }
 
-func Decode(contentType string, r io.Reader, envelope *SOAPEnvelope) error {
+// Decode parses the request.Body to xroad.SOAPEnvelope or to xroad.XOP
+// depending on the Content-Type request header.
+// After the body is read, we seek to the start of the request.Body
+// future consumers.
+func Decode(r *http.Request, envelope *SOAPEnvelope) error {
+	contentType := r.Header.Get("Content-Type")
+
+	b, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return WrapError(err)
+	}
+	body := bytes.NewReader(b)
+
 	if strings.HasPrefix(contentType, "text/xml") {
 		// parse SOAP
-		dec := xml.NewDecoder(r)
+		dec := xml.NewDecoder(body)
 		if err := dec.Decode(envelope); err != nil {
+			return WrapError(err)
+		}
+		if _, err := body.Seek(0, io.SeekStart); err != nil {
 			return WrapError(err)
 		}
 		return nil
 	} else if strings.HasPrefix(contentType, "multipart/") {
 		// parse multipart
-		xop, err := NewXOPFromReader(contentType, r, envelope)
+		xop, err := NewXOPFromReader(contentType, body, envelope)
 		if err != nil {
 			return WrapError(err)
 		}
 		envelope.XOP = xop
+		if _, err := body.Seek(0, io.SeekStart); err != nil {
+			return WrapError(err)
+		}
 		return nil
 	}
 	return WrapError(errors.New("invalid Content-Type"))
