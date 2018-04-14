@@ -1,6 +1,7 @@
 package xroad
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
@@ -34,6 +35,42 @@ func NewXOP() (XOP, error) {
 	return XOP{
 		Boundary: fmt.Sprintf("uuid:%s", u.String()),
 	}, nil
+}
+
+type FileIncluder interface {
+	IncludeFile(string)
+}
+
+func NewXOPRequestFromReader(url string, header SOAPHeader, body FileIncluder, r io.Reader, filename string) (*http.Request, error) {
+	xop, err := NewXOP()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	cid, err := xop.AddFile(filename, r)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	body.IncludeFile(cid)
+	xop.SOAPEnvelope = NewEnvelope(header, body)
+
+	return NewXOPRequest(url, header, xop)
+}
+
+func NewXOPRequest(url string, header SOAPHeader, xop XOP) (*http.Request, error) {
+	buf := &bytes.Buffer{}
+	_, err := xop.WriteTo(buf)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	req, err := http.NewRequest("POST", url, buf)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	req.Header.Set("Content-Type", xop.ContentType())
+	req.Header.Set("User-Agent", UserAgent)
+
+	return req, nil
 }
 
 func (x *XOP) AddFile(filename string, r io.Reader) (string, error) {

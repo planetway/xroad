@@ -115,6 +115,13 @@ func Decode(r *http.Request, envelope *SOAPEnvelope) error {
 	return nil
 }
 
+func DecodeResponse(r *http.Response, envelope *SOAPEnvelope) error {
+	if r == nil {
+		return errors.New("invalid response")
+	}
+	return WrapError(DecodeReader(r.Body, r.Header.Get("Content-Type"), envelope))
+}
+
 func DecodeReader(r io.Reader, contentType string, envelope *SOAPEnvelope) error {
 	if strings.HasPrefix(contentType, "text/xml") {
 		// parse SOAP

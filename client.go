@@ -3,6 +3,7 @@ package xroad
 import (
 	"bytes"
 	"encoding/xml"
+	"io"
 	"net/http"
 	"time"
 
@@ -32,13 +33,37 @@ func NewClient() Client {
 	}
 }
 
-func (c Client) Send(url string, h SOAPHeader, body interface{}) (*http.Response, error) {
+// Although the response.Body is already read in Send() to parse the response into SOAP,
+// it is the caller's responsibility to close response.Body.
+// The resEnvelope might include XOP files, and those should be read until EOF
+// before closing the response.Body.
+func (c Client) Send(url string, h SOAPHeader, body interface{}, resEnvelope *SOAPEnvelope) (*http.Response, error) {
 	req, err := c.NewRequest(url, h, body)
 	if err != nil {
 		return nil, WrapError(err)
 	}
 
+	return c.doAndDecode(req, resEnvelope)
+}
+
+func (c Client) SendXOP(url string, h SOAPHeader, body FileIncluder, r io.Reader, filename string, resEnvelope *SOAPEnvelope) (*http.Response, error) {
+	req, err := NewXOPRequestFromReader(url, h, body, r, filename)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	return c.doAndDecode(req, resEnvelope)
+}
+
+func (c Client) doAndDecode(req *http.Request, resEnvelope *SOAPEnvelope) (*http.Response, error) {
 	res, err := c.Do(req)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	if err := DecodeResponse(res, resEnvelope); err != nil {
+		return nil, WrapError(err)
+	}
 
 	return res, WrapError(err)
 }
@@ -67,22 +92,6 @@ func (c Client) NewRequest(url string, header SOAPHeader, body interface{}) (*ht
 		return nil, WrapError(err)
 	}
 	req.Header.Set("Content-Type", "text/xml; charset=utf-8")
-	req.Header.Set("User-Agent", UserAgent)
-
-	return req, nil
-}
-
-func (c Client) NewXOPRequest(url string, header SOAPHeader, xop XOP) (*http.Request, error) {
-	buf := &bytes.Buffer{}
-	_, err := xop.WriteTo(buf)
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	req, err := http.NewRequest("POST", url, buf)
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	req.Header.Set("Content-Type", xop.ContentType())
 	req.Header.Set("User-Agent", UserAgent)
 
 	return req, nil
