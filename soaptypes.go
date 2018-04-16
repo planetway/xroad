@@ -77,9 +77,17 @@ type XroadClient struct {
 	SubsystemCode string   `xml:"http://x-road.eu/xsd/identifiers subsystemCode" json:"subsystemCode"`
 }
 
+func (x XroadClient) SameMember(y XroadClient) bool {
+	if x.XRoadInstance == y.XRoadInstance &&
+		x.MemberClass == y.MemberClass &&
+		x.MemberCode == y.MemberCode {
+		return true
+	}
+	return false
+}
+
 func (x XroadClient) Equal(y XroadClient) bool {
-	if x.ObjectType == y.ObjectType &&
-		x.XRoadInstance == y.XRoadInstance &&
+	if x.XRoadInstance == y.XRoadInstance &&
 		x.MemberClass == y.MemberClass &&
 		x.MemberCode == y.MemberCode &&
 		x.SubsystemCode == y.SubsystemCode {
