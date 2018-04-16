@@ -16,20 +16,37 @@ var (
 
 type IdGenerator func() (string, error)
 
-type Client struct {
+type SOAPClient struct {
 	http.Client
-	IdGenerator // override if you want your own Id generator other than uuid.NewV4
 }
 
-func NewClient() Client {
-	return Client{
+type Client struct {
+	SOAPClient
+	IdGenerator // override if you want your own Id generator other than uuid.NewV4
+	Url         string
+	// header is reused when Send() ing multiple requests using this Client,
+	// so mutating Header will effect all future requests.
+	// Use Set* funcs to set the header while keeping the original client unchanged.
+	header SOAPHeader
+}
+
+func NewSOAPClient() SOAPClient {
+	return SOAPClient{
 		Client: http.Client{
 			Timeout: 30 * time.Second,
 		},
+	}
+}
+
+func NewClient(url string, h SOAPHeader) Client {
+	return Client{
+		SOAPClient: NewSOAPClient(),
 		IdGenerator: func() (string, error) {
 			u, err := uuid.NewV4()
 			return u.String(), WrapError(err)
 		},
+		Url:    url,
+		header: h,
 	}
 }
 
@@ -37,7 +54,7 @@ func NewClient() Client {
 // it is the caller's responsibility to close response.Body.
 // The resEnvelope might include XOP files, and those should be read until EOF
 // before closing the response.Body.
-func (c Client) Send(url string, h SOAPHeader, body interface{}, resEnvelope *SOAPEnvelope) (*http.Response, error) {
+func (c SOAPClient) Send(url string, h SOAPHeader, body interface{}, resEnvelope *SOAPEnvelope) (*http.Response, error) {
 	req, err := c.NewRequest(url, h, body)
 	if err != nil {
 		return nil, WrapError(err)
@@ -46,7 +63,7 @@ func (c Client) Send(url string, h SOAPHeader, body interface{}, resEnvelope *SO
 	return c.doAndDecode(req, resEnvelope)
 }
 
-func (c Client) SendXOP(url string, h SOAPHeader, body FileIncluder, r io.Reader, filename string, resEnvelope *SOAPEnvelope) (*http.Response, error) {
+func (c SOAPClient) SendXOP(url string, h SOAPHeader, body FileIncluder, r io.Reader, filename string, resEnvelope *SOAPEnvelope) (*http.Response, error) {
 	req, err := NewXOPRequestFromReader(url, h, body, r, filename)
 	if err != nil {
 		return nil, WrapError(err)
@@ -55,7 +72,7 @@ func (c Client) SendXOP(url string, h SOAPHeader, body FileIncluder, r io.Reader
 	return c.doAndDecode(req, resEnvelope)
 }
 
-func (c Client) doAndDecode(req *http.Request, resEnvelope *SOAPEnvelope) (*http.Response, error) {
+func (c SOAPClient) doAndDecode(req *http.Request, resEnvelope *SOAPEnvelope) (*http.Response, error) {
 	res, err := c.Do(req)
 	if err != nil {
 		return nil, WrapError(err)
@@ -68,18 +85,13 @@ func (c Client) doAndDecode(req *http.Request, resEnvelope *SOAPEnvelope) (*http
 	return res, WrapError(err)
 }
 
-func (c Client) Do(req *http.Request) (*http.Response, error) {
+func (c SOAPClient) Do(req *http.Request) (*http.Response, error) {
 	res, err := c.Client.Do(req)
 
 	return res, WrapError(err)
 }
 
-func (c Client) NewRequest(url string, header SOAPHeader, body interface{}) (*http.Request, error) {
-	id, err := c.IdGenerator()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	header.Id = id
+func (c SOAPClient) NewRequest(url string, header SOAPHeader, body interface{}) (*http.Request, error) {
 	e := NewEnvelope(header, body)
 
 	b, err := xml.Marshal(e)
@@ -95,4 +107,52 @@ func (c Client) NewRequest(url string, header SOAPHeader, body interface{}) (*ht
 	req.Header.Set("User-Agent", UserAgent)
 
 	return req, nil
+}
+
+func (c Client) Send(body interface{}, resEnvelope *SOAPEnvelope) (*http.Response, error) {
+	id, err := c.IdGenerator()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	h := c.header
+	h.Id = id
+	return c.SOAPClient.Send(c.Url, h, body, resEnvelope)
+}
+
+func (c Client) SendXOP(body FileIncluder, r io.Reader, filename string, resEnvelope *SOAPEnvelope) (*http.Response, error) {
+	id, err := c.IdGenerator()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	h := c.header
+	h.Id = id
+	return c.SOAPClient.SendXOP(c.Url, h, body, r, filename, resEnvelope)
+}
+
+func (c Client) SetUserId(u string) Client {
+	h := c.header
+	h.UserId = u
+	newC := c
+	newC.header = h
+	return newC
+}
+
+func (c Client) SetServiceCode(serviceCode ...string) Client {
+	version := c.header.Service.ServiceVersion
+	if len(serviceCode) > 1 {
+		version = serviceCode[1]
+	}
+	h := c.header
+	h.Service.ServiceVersion = version
+	h.Service.ServiceCode = serviceCode[0]
+	newC := c
+	newC.header = h
+	return newC
+}
+
+func (c Client) SetHeader(f func(SOAPHeader) SOAPHeader) Client {
+	h := f(c.header)
+	newC := c
+	newC.header = h
+	return newC
 }
