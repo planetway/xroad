@@ -129,14 +129,14 @@ func (c Client) SendXOP(body FileIncluder, r io.Reader, filename string, resEnve
 	return c.SOAPClient.SendXOP(c.Url, h, body, r, filename, resEnvelope)
 }
 
-// SetUserId changes it's UserId in SOAP header.
+// SetUserId mutates UserId in SOAP header.
 // Make a copy of Client before calling this if you're reusing the client.
 func (c *Client) SetUserId(u string) *Client {
 	c.header.UserId = u
 	return c
 }
 
-// SetServiceCode changes it's UserId in SOAP header.
+// SetServiceCode mutates serviceCode and optionally serviceVersion in SOAP header.
 // Make a copy of Client before calling this if you're reusing the client.
 func (c *Client) SetServiceCode(serviceCode ...string) *Client {
 	version := c.header.Service.ServiceVersion
@@ -148,7 +148,19 @@ func (c *Client) SetServiceCode(serviceCode ...string) *Client {
 	return c
 }
 
-// SetHeader changes it's UserId in SOAP header.
+// SetProvider mutates Service's Subsystem part of SOAP header.
+// Make a copy of Client before calling this if you're reusing the client.
+func (c *Client) SetProvider(s XroadClient) *Client {
+	cl := c.header.Service.XroadClient
+	cl.XRoadInstance = s.XRoadInstance
+	cl.MemberClass = s.MemberClass
+	cl.MemberCode = s.MemberCode
+	cl.SubsystemCode = s.SubsystemCode
+	c.header.Service.XroadClient = cl
+	return c
+}
+
+// SetHeader mutates c.header.
 // Make a copy of Client before calling this if you're reusing the client.
 func (c *Client) SetHeader(f func(SOAPHeader) SOAPHeader) *Client {
 	h := f(c.header)
