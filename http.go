@@ -77,7 +77,7 @@ func (l accessLogger) Log(record accesslog.LogRecord) {
 		"status", record.Status,
 		"size", record.Size,
 		"ua", record.RequestHeader.Get("user-agent"),
-		"apptime", fmt.Sprintf("%.3f", record.ElapsedTime.Seconds()))
+		"reqtime", fmt.Sprintf("%.3f", record.ElapsedTime.Seconds()))
 }
 
 func DumpRequest(h HTTPHandler) HTTPHandler {
