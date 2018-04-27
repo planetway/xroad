@@ -60,7 +60,7 @@ type XroadService struct {
 // Create a new XroadService from service FQDN.
 // Reading code like FiVRKSignCertificateProfileInfo.java , we assume all the parts don't include a '/'
 func NewXroadService(fqdn string) (XroadService, error) {
-	parts := strings.Split(fqdn, "/")
+	parts := strings.Split(fqdn, ".")
 	if len(parts) != 6 {
 		return XroadService{}, WrapError(errors.New("invalid service fqdn"))
 	}
@@ -105,9 +105,9 @@ type XroadClient struct {
 
 // Create a new XroadClient from subsystem FQDN.
 // Reading code like FiVRKSignCertificateProfileInfo.java , we assume all the parts don't include a '/'
+// ex: JP-TEST.COM.12973914.librarian
 func NewXroadClient(fqdn string) (XroadClient, error) {
-	// TODO confirm if any field might include a '.'
-	parts := strings.Split(fqdn, "/")
+	parts := strings.Split(fqdn, ".")
 	if len(parts) != 4 {
 		return XroadClient{}, WrapError(errors.New("invalid client fqdn"))
 	}
@@ -140,7 +140,7 @@ func (x XroadClient) Equal(y XroadClient) bool {
 }
 
 func (x XroadClient) Fqdn() string {
-	return fmt.Sprintf("%s/%s/%s/%s", x.XRoadInstance, x.MemberClass, x.MemberCode, x.SubsystemCode)
+	return fmt.Sprintf("%s.%s.%s.%s", x.XRoadInstance, x.MemberClass, x.MemberCode, x.SubsystemCode)
 }
 
 func (x XroadClient) String() string {
