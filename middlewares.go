@@ -80,7 +80,7 @@ func DumpResponse(next SOAPHandler) SOAPHandler {
 func SOAPHeaderLog(l Logger) func(SOAPHandler) SOAPHandler {
 	return func(next SOAPHandler) SOAPHandler {
 		return SOAPHandlerFunc(func(w http.ResponseWriter, r *http.Request, e SOAPEnvelope) error {
-			l.Log("id", e.Header.Id, "userId", e.Header.UserId, "client", e.Header.Client.String(), "service", e.Header.Service.String())
+			l.Log("id", e.Header.Id, "userId", e.Header.UserId, "client", e.Header.Client.Fqdn(), "service", e.Header.Service.Fqdn())
 			return WrapError(next.ServeSOAP(w, r, e))
 		})
 	}
