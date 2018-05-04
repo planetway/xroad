@@ -59,12 +59,12 @@ type XroadService struct {
 
 // Create a new XroadService from service FQDN.
 // Reading code like FiVRKSignCertificateProfileInfo.java , we assume all the parts don't include a '/'
-func NewXroadService(fqdn string) (XroadService, error) {
+func NewXroadService(fqdn string) (*XroadService, error) {
 	parts := strings.Split(fqdn, ".")
 	if len(parts) != 6 {
-		return XroadService{}, WrapError(errors.New("invalid service fqdn"))
+		return nil, WrapError(errors.New("invalid service fqdn"))
 	}
-	return XroadService{
+	return &XroadService{
 		XroadClient: XroadClient{
 			ObjectType:    "",
 			XRoadInstance: parts[0],
@@ -104,14 +104,14 @@ type XroadClient struct {
 }
 
 // Create a new XroadClient from subsystem FQDN.
-// Reading code like FiVRKSignCertificateProfileInfo.java , we assume all the parts don't include a '/'
+// Reading code like FiVRKSignCertificateProfileInfo.java , we assume all the parts don't include a '.'
 // ex: JP-TEST.COM.12973914.librarian
-func NewXroadClient(fqdn string) (XroadClient, error) {
+func NewXroadClient(fqdn string) (*XroadClient, error) {
 	parts := strings.Split(fqdn, ".")
 	if len(parts) != 4 {
-		return XroadClient{}, WrapError(errors.New("invalid client fqdn"))
+		return nil, WrapError(errors.New("invalid client fqdn"))
 	}
-	return XroadClient{
+	return &XroadClient{
 		ObjectType:    "",
 		XRoadInstance: parts[0],
 		MemberClass:   parts[1],
