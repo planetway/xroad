@@ -87,7 +87,7 @@ func (x XroadService) Equal(y XroadService) bool {
 }
 
 func (x XroadService) Fqdn() string {
-	return fmt.Sprintf("%s/%s/%s", x.XroadClient.Fqdn(), x.ServiceCode, x.ServiceVersion)
+	return fmt.Sprintf("%s.%s.%s", x.XroadClient.Fqdn(), x.ServiceCode, x.ServiceVersion)
 }
 
 func (x XroadService) String() string {
