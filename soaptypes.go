@@ -31,7 +31,7 @@ func (x SOAPEnvelope) NewResponseEnvelope(body interface{}) SOAPEnvelope {
 }
 
 func (x SOAPEnvelope) String() string {
-	return fmt.Sprintf("header: [%s]", x.Header)
+	return fmt.Sprintf("header: [%s], body: [%s]", x.Header, x.Body)
 }
 
 type SOAPHeader struct {
@@ -91,7 +91,7 @@ func (x XroadService) Fqdn() string {
 }
 
 func (x XroadService) String() string {
-	return fmt.Sprintf("%s, serviceCode: %s, serviceVersion: %s", x.XroadClient.String(), x.ServiceCode, x.ServiceVersion)
+	return x.Fqdn()
 }
 
 type XroadClient struct {
@@ -144,8 +144,7 @@ func (x XroadClient) Fqdn() string {
 }
 
 func (x XroadClient) String() string {
-	return fmt.Sprintf("instance: %s, memberClass: %s, memberCode: %s, subsystemCode: %s, objectType: %s",
-		x.XRoadInstance, x.MemberClass, x.MemberCode, x.SubsystemCode, x.ObjectType)
+	return x.Fqdn()
 }
 
 type SOAPFaultBody struct {
