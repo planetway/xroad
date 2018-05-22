@@ -162,7 +162,11 @@ type SOAPFault struct {
 }
 
 func (s SOAPFault) Error() string {
-	return fmt.Sprintf("faultcode: %s, faultstring: %s, faultactor: %s, %s", s.Code, s.String, s.Actor, s.Detail)
+	cause := "-"
+	if s.Cause != nil {
+		cause = s.Cause.Error()
+	}
+	return fmt.Sprintf("faultcode: %s, faultstring: %s, faultactor: %s, %s, cause: %s", s.Code, s.String, s.Actor, s.Detail, cause)
 }
 
 // reuse http status codes here
