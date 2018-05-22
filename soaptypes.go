@@ -158,6 +158,7 @@ type SOAPFault struct {
 	String  string           `xml:"faultstring,omitempty"`
 	Actor   string           `xml:"faultactor,omitempty"`
 	Detail  *SOAPFaultDetail `xml:""`
+	Cause   error            `xml:"-"` // only used for logging
 }
 
 func (s SOAPFault) Error() string {
@@ -172,6 +173,17 @@ func NewSOAPFault(code int, detail string) SOAPFault {
 		Detail: &SOAPFaultDetail{
 			FaultDetail: detail,
 		},
+	}
+}
+
+func NewSOAPFaultWithCause(code int, detail string, cause error) SOAPFault {
+	return SOAPFault{
+		Code:   "soap:Server",
+		String: http.StatusText(code),
+		Detail: &SOAPFaultDetail{
+			FaultDetail: detail,
+		},
+		Cause: cause,
 	}
 }
 
