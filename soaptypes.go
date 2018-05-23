@@ -46,7 +46,7 @@ type SOAPHeader struct {
 }
 
 func (x SOAPHeader) String() string {
-	return fmt.Sprintf("v: %s, id: %s, userId: %s, targetUserId: %v, issue: %s, service: [%s], client: [%s]",
+	return fmt.Sprintf("v: %s, id: %s, userId: %s, targetUserId: %s, issue: %s, service: [%s], client: [%s]",
 		x.ProtocolVersion, x.Id, x.UserId, x.TargetUserId, x.Issue, x.Service, x.Client)
 }
 
