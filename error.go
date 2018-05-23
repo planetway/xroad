@@ -2,10 +2,22 @@ package xroad
 
 import (
 	"fmt"
+	"net/http"
 	"runtime"
 	"strings"
 
 	"github.com/pkg/errors"
+)
+
+var (
+	ErrInvalidXml = HTTPError{
+		Code: http.StatusBadRequest,
+		Str:  "Invalid XML",
+	}
+	ErrServiceNotFound = SOAPFault{
+		Code:   "soap:Server",
+		String: "Service not found",
+	}
 )
 
 func WrapError(err error) error {

@@ -63,10 +63,7 @@ func (m *Mux) serveSoap2(w http.ResponseWriter, r *http.Request, e SOAPEnvelope)
 	if h, ok := m.handlers["*"]; ok {
 		return WrapError(h.ServeSOAP(w, r, e))
 	}
-	return SOAPFault{
-		Code:   "soap:Server",
-		String: "Service not found",
-	}
+	return ErrServiceNotFound
 }
 
 func (m *Mux) serveSoap(w http.ResponseWriter, r *http.Request, e SOAPEnvelope) error {
@@ -87,7 +84,9 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	var e SOAPEnvelope
 	e.Body = m.NewBody()
 	if err := Decode(r, &e); err != nil {
-		return WrapError(err)
+		ret := ErrInvalidXml
+		ret.Cause = err
+		return WrapError(ret)
 	}
 	return WrapError(m.serveSoap(w, r, e))
 }
