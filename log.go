@@ -1,8 +1,10 @@
 package xroad
 
-// the same as go-kit/kit/log/Logger but without importing it
+// we need levels
 type Logger interface {
-	Log(keyvals ...interface{}) error
+	Debug(keyvals ...interface{}) error
+	Info(keyvals ...interface{}) error
+	Error(keyvals ...interface{}) error
 }
 
 var (
@@ -11,6 +13,6 @@ var (
 
 type nopLog struct{}
 
-func (_ nopLog) Log(keyvals ...interface{}) error {
-	return nil
-}
+func (_ nopLog) Debug(keyvals ...interface{}) error { return nil }
+func (_ nopLog) Info(keyvals ...interface{}) error  { return nil }
+func (_ nopLog) Error(keyvals ...interface{}) error { return nil }

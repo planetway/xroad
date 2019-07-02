@@ -19,14 +19,14 @@ func ErrorToSOAPFault(next SOAPHandler) SOAPHandler {
 				res := e.NewResponseEnvelope(SOAPFaultBody{
 					Fault: cause,
 				})
-				Log.Log("fault", cause)
+				Log.Info("fault", cause)
 				WriteSoap(500, res, w)
 				return nil
 			}
-			Log.Log("error", WrapError(err))
+			Log.Error("error", WrapError(err))
 			res := e.NewResponseEnvelope(SOAPFaultBody{
 				Fault: SOAPFault{
-					Code:   "soap:Server",
+					Code:   "Server",
 					String: "Internal Server Error",
 				},
 			})
@@ -80,7 +80,7 @@ func DumpResponse(next SOAPHandler) SOAPHandler {
 func SOAPHeaderLog(l Logger) func(SOAPHandler) SOAPHandler {
 	return func(next SOAPHandler) SOAPHandler {
 		return SOAPHandlerFunc(func(w http.ResponseWriter, r *http.Request, e SOAPEnvelope) error {
-			l.Log("header", e.Header)
+			l.Info("header", e.Header)
 			return WrapError(next.ServeSOAP(w, r, e))
 		})
 	}
@@ -101,7 +101,7 @@ func RecoverSOAP(next SOAPHandler) SOAPHandler {
 			}
 			if err != nil {
 				stack := debug.Stack()
-				Log.Log("error", err, "stack", string(stack))
+				Log.Error("error", err, "stack", string(stack))
 			}
 		}()
 		return next.ServeSOAP(w, r, e)

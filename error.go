@@ -15,7 +15,7 @@ var (
 		Str:  "Invalid XML",
 	}
 	ErrServiceNotFound = SOAPFault{
-		Code:   "soap:Server",
+		Code:   "Server",
 		String: "Service not found",
 	}
 )

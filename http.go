@@ -48,7 +48,7 @@ func ErrorTo500(h HTTPHandler) http.Handler {
 			case HTTPError:
 				http.Error(w, e.Str, e.Code)
 			default:
-				Log.Log("error", err)
+				Log.Error("error", err)
 				http.Error(w, "Internal Server Error", 500)
 			}
 		}
@@ -70,7 +70,7 @@ func (l accessLogger) Log(record accesslog.LogRecord) {
 	if ip == "" {
 		ip = record.RequestHeader.Get("x-forwarded-for")
 	}
-	l.logger.Log("ip", ip,
+	l.logger.Info("ip", ip,
 		"host", record.Host,
 		"method", record.Method,
 		"uri", record.Uri,
@@ -103,7 +103,7 @@ func RecoverHTTP() func(http.Handler) http.Handler {
 						err = errors.New("panic")
 					}
 					stack := debug.Stack()
-					Log.Log("error", err, "stack", string(stack))
+					Log.Error("error", err, "stack", string(stack))
 
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				}

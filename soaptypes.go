@@ -4,7 +4,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 )
 
@@ -34,20 +33,39 @@ func (x SOAPEnvelope) String() string {
 	return fmt.Sprintf("header: [%s], body: [%s]", x.Header, x.Body)
 }
 
+// https://github.com/nordic-institute/X-Road/blob/develop/doc/Protocols/pr-mess_x-road_message_protocol.md#22-message-headers
 type SOAPHeader struct {
-	XMLName         xml.Name     `xml:"http://schemas.xmlsoap.org/soap/envelope/ Header" json:"-"`
-	ProtocolVersion string       `xml:"http://x-road.eu/xsd/xroad.xsd protocolVersion" json:"protocolVersion"`
-	Id              string       `xml:"http://x-road.eu/xsd/xroad.xsd id" json:"id"`
-	UserId          string       `xml:"http://x-road.eu/xsd/xroad.xsd userId" json:"userId"`
-	TargetUserId    string       `xml:"http://x-road.eu/xsd/xroad.xsd targetUserId,omitempty" json:"targetUserId"`
-	Issue           string       `xml:"http://x-road.eu/xsd/xroad.xsd issue,omitempty" json:"issue"`
-	Service         XroadService `xml:"service" json:"service" mapstructure:"service"`
-	Client          XroadClient  `xml:"client" json:"client" mapstructure:"client"`
+	XMLName         xml.Name             `xml:"http://schemas.xmlsoap.org/soap/envelope/ Header" json:"-"`
+	ProtocolVersion string               `xml:"http://x-road.eu/xsd/xroad.xsd protocolVersion" json:"protocolVersion,omitempty"`
+	Id              string               `xml:"http://x-road.eu/xsd/xroad.xsd id" json:"id"`
+	UserId          string               `xml:"http://x-road.eu/xsd/xroad.xsd userId" json:"userId"`
+	TargetUserId    string               `xml:"http://xsd.planetcross.net/planetcross.xsd targetUserId,omitempty" json:"targetUserId"`
+	TargetUserIdXrd string               `xml:"http://x-road.eu/xsd/xroad.xsd targetUserId,omitempty" json:"-"`
+	Issue           string               `xml:"http://x-road.eu/xsd/xroad.xsd issue,omitempty" json:"issue,omitempty"`
+	Service         *XroadService        `xml:"service" json:"service" mapstructure:"service"`
+	CentralService  *XroadCentralService `xml:"centralService" json:"centralService" mapstructure:"centralService"`
+	Client          XroadClient          `xml:"client" json:"client" mapstructure:"client"`
 }
 
 func (x SOAPHeader) String() string {
 	return fmt.Sprintf("v: %s, id: %s, userId: %s, targetUserId: %s, issue: %s, service: [%s], client: [%s]",
 		x.ProtocolVersion, x.Id, x.UserId, x.TargetUserId, x.Issue, x.Service, x.Client)
+}
+
+func (h *SOAPHeader) fillDefaults() {
+	// fill defaults
+	if h.ProtocolVersion == "" {
+		h.ProtocolVersion = "4.0"
+	}
+	if service := h.Service; service != nil && service.ObjectType == "" {
+		service.ObjectType = "SERVICE"
+	}
+	if centralService := h.CentralService; centralService != nil && centralService.ObjectType == "" {
+		centralService.ObjectType = "CENTRALSERVICE"
+	}
+	if h.Client.ObjectType == "" {
+		h.Client.ObjectType = "SUBSYSTEM"
+	}
 }
 
 type XroadService struct {
@@ -94,9 +112,16 @@ func (x XroadService) String() string {
 	return x.Fqdn()
 }
 
+type XroadCentralService struct {
+	XMLName       xml.Name `xml:"http://x-road.eu/xsd/xroad.xsd centralService" json:"-"`
+	ObjectType    string   `xml:"http://x-road.eu/xsd/identifiers objectType,attr" json:"objectType,omitempty"`
+	XRoadInstance string   `xml:"http://x-road.eu/xsd/identifiers xRoadInstance" json:"xRoadInstance"`
+	ServiceCode   string   `xml:"http://x-road.eu/xsd/identifiers serviceCode" json:"serviceCode"`
+}
+
 type XroadClient struct {
 	XMLName       xml.Name `xml:"http://x-road.eu/xsd/xroad.xsd client" json:"-"`
-	ObjectType    string   `xml:"http://x-road.eu/xsd/identifiers objectType,attr" json:"objectType"`
+	ObjectType    string   `xml:"http://x-road.eu/xsd/identifiers objectType,attr" json:"objectType,omitempty"`
 	XRoadInstance string   `xml:"http://x-road.eu/xsd/identifiers xRoadInstance" json:"xRoadInstance"`
 	MemberClass   string   `xml:"http://x-road.eu/xsd/identifiers memberClass" json:"memberClass"`
 	MemberCode    string   `xml:"http://x-road.eu/xsd/identifiers memberCode" json:"memberCode"`
@@ -170,24 +195,19 @@ func (s SOAPFault) Error() string {
 }
 
 // reuse http status codes here
-func NewSOAPFault(code int, detail string) SOAPFault {
+func NewSOAPFault(fault string) SOAPFault {
 	return SOAPFault{
-		Code:   "soap:Server",
-		String: http.StatusText(code),
-		Detail: &SOAPFaultDetail{
-			FaultDetail: detail,
-		},
+		Code:   "Server",
+		String: fault,
+		Detail: nil,
 	}
 }
 
-func NewSOAPFaultWithCause(code int, detail string, cause error) SOAPFault {
+func NewSOAPFaultWithCause(fault string, cause error) SOAPFault {
 	return SOAPFault{
-		Code:   "soap:Server",
-		String: http.StatusText(code),
-		Detail: &SOAPFaultDetail{
-			FaultDetail: detail,
-		},
-		Cause: cause,
+		Code:   "Server",
+		String: fault,
+		Cause:  cause,
 	}
 }
 
