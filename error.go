@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"runtime"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 var (
@@ -22,10 +20,10 @@ var (
 
 func WrapError(err error) error {
 	if err == nil {
-		return err
+		return nil
 	}
 	f, file, line := caller(3)
-	return errors.Wrap(err, fmt.Sprintf("%s:%d %s", file, line, f))
+	return fmt.Errorf("%s:%d %s: %w", file, line, f, err)
 }
 
 // return the caller's func name, file name, line number

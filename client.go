@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/google/uuid"
 )
 
 var (
@@ -39,8 +39,8 @@ func NewClient(url string, h SOAPHeader) Client {
 	return Client{
 		SOAPClient: NewSOAPClient(),
 		IdGenerator: func() (string, error) {
-			u, err := uuid.NewV4()
-			return u.String(), WrapError(err)
+			uuid, err := uuid.NewUUID()
+			return uuid.String(), WrapError(err)
 		},
 		Url:        url,
 		baseHeader: h,

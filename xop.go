@@ -13,7 +13,7 @@ import (
 	"net/textproto"
 	"strings"
 
-	"github.com/satori/go.uuid"
+	"github.com/google/uuid"
 )
 
 type XOP struct {
@@ -28,12 +28,12 @@ type xopFile struct {
 }
 
 func NewXOP() (XOP, error) {
-	u, err := uuid.NewV4()
+	uuid, err := uuid.NewUUID()
 	if err != nil {
 		return XOP{}, WrapError(err)
 	}
 	return XOP{
-		Boundary: fmt.Sprintf("uuid:%s", u.String()),
+		Boundary: fmt.Sprintf("uuid:%s", uuid.String()),
 	}, nil
 }
 
@@ -74,11 +74,11 @@ func NewXOPRequest(url string, header SOAPHeader, xop XOP) (*http.Request, error
 }
 
 func (x *XOP) AddFile(filename string, r io.Reader) (string, error) {
-	u, err := uuid.NewV4()
+	uuid, err := uuid.NewUUID()
 	if err != nil {
 		return "", WrapError(err)
 	}
-	cid := u.String()
+	cid := uuid.String()
 	x.Files = append(x.Files, xopFile{
 		ContentId: cid,
 		Filename:  filename,

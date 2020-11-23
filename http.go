@@ -1,6 +1,7 @@
 package xroad
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -9,7 +10,6 @@ import (
 	"runtime/debug"
 
 	accesslog "github.com/mash/go-accesslog"
-	"github.com/pkg/errors"
 )
 
 type HTTPHandler interface {
@@ -43,11 +43,10 @@ func (e HTTPError) Error() string {
 func ErrorTo500(h HTTPHandler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := h.ServeHTTP(w, r); err != nil {
-			cause := errors.Cause(err)
-			switch e := cause.(type) {
-			case HTTPError:
-				http.Error(w, e.Str, e.Code)
-			default:
+			var he HTTPError
+			if errors.As(err, &he) {
+				http.Error(w, he.Str, he.Code)
+			} else {
 				Log.Error("error", err)
 				http.Error(w, "Internal Server Error", 500)
 			}

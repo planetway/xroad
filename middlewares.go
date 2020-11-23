@@ -1,13 +1,12 @@
 package xroad
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"runtime/debug"
-
-	"github.com/pkg/errors"
 )
 
 type SOAPMiddleware func(SOAPHandler) SOAPHandler
@@ -15,11 +14,12 @@ type SOAPMiddleware func(SOAPHandler) SOAPHandler
 func ErrorToSOAPFault(next SOAPHandler) SOAPHandler {
 	return SOAPHandlerFunc(func(w http.ResponseWriter, r *http.Request, e SOAPEnvelope) error {
 		if err := next.ServeSOAP(w, r, e); err != nil {
-			if cause, ok := errors.Cause(err).(SOAPFault); ok {
+			var soapf SOAPFault
+			if errors.As(err, &soapf) {
 				res := e.NewResponseEnvelope(SOAPFaultBody{
-					Fault: cause,
+					Fault: soapf,
 				})
-				Log.Info("fault", cause)
+				Log.Info("fault", soapf)
 				WriteSoap(500, res, w)
 				return nil
 			}

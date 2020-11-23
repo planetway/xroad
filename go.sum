@@ -1,0 +1,4 @@
+github.com/google/uuid v1.1.2 h1:EVhdT+1Kseyi1/pUmXKaFxYsDNy9RQYkMWRH68J/W7Y=
+github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+github.com/mash/go-accesslog v1.2.0 h1:NRbA2PqSLjY8UUZAWAzuCVjidKBISzdc5IjJ0gdJe8g=
+github.com/mash/go-accesslog v1.2.0/go.mod h1:DAbGQzio0KX16krP/3uouoTPxGbzcPjFAb948zazOgg=
